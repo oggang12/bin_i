@@ -17,3 +17,101 @@ that enables a CUDA kernel to create and synchronize new nested work.
 Basically, a child CUDA kernel can be called from within a parent CUDA kernel and then optionally
 synchronize on the completion of that child CUDA Kernel. The parent CUDA kernel can consume the output
 produced from the child CUDA kernel, all without CPU involvement.
+
+
+3 parallel reduction explanation
+
+Let's break down each part of the `main()` function:
+
+```cpp
+int main() {
+```
+- This line defines the entry point of the program, the `main()` function.
+
+```cpp
+    // Input array
+    const int array_size = 256;
+    int input[array_size];
+```
+- Here, we define an input array named `input` with a size of 256 elements. The `const` keyword indicates that the variable `array_size` cannot be modified after initialization.
+
+```cpp
+    // Initialize input array
+    for (int i = 0; i < array_size; ++i) {
+        input[i] = i + 1;
+    }
+```
+- This loop initializes each element of the `input` array with values from 1 to 256, inclusive.
+
+```cpp
+    // Allocate device memory
+    int* d_input;
+    int* d_output_min;
+    int* d_output_max;
+    int* d_output_sum;
+    float* d_output_avg;
+    cudaMalloc((void**)&d_input, sizeof(int) * array_size);
+    cudaMalloc((void**)&d_output_min, sizeof(int) * array_size);
+    cudaMalloc((void**)&d_output_max, sizeof(int) * array_size);
+    cudaMalloc((void**)&d_output_sum, sizeof(int) * array_size);
+    cudaMalloc((void**)&d_output_avg, sizeof(float) * array_size);
+```
+- Here, we declare pointers for device memory (`d_input`, `d_output_min`, `d_output_max`, `d_output_sum`, `d_output_avg`). Then, we allocate memory on the GPU for these arrays using `cudaMalloc`. The size of each array is determined by `sizeof(int) * array_size` or `sizeof(float) * array_size`, depending on the data type.
+
+```cpp
+    // Copy input array to device memory
+    cudaMemcpy(d_input, input, sizeof(int) * array_size, cudaMemcpyHostToDevice);
+```
+- This line copies the `input` array from the host (CPU) to the device (GPU) memory using `cudaMemcpy`. It transfers the data from the `input` array to the allocated device memory pointed to by `d_input`.
+
+```cpp
+    // Determine the number of threads and blocks
+    int threads_per_block = BLOCK_SIZE;
+    int blocks_per_grid = (array_size + threads_per_block - 1) / threads_per_block;
+```
+- These lines determine the number of threads per block and the number of blocks per grid for launching the CUDA kernels. The `BLOCK_SIZE` constant is defined earlier, and `blocks_per_grid` is calculated based on the size of the input array and the number of threads per block.
+
+```cpp
+    // Launch the kernels for parallel reduction
+    reduceMin<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_min, array_size);
+    reduceMax<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_max, array_size);
+    reduceSum<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_sum, array_size);
+    reduceAverage<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_avg, array_size);
+```
+- These lines launch CUDA kernels (`reduceMin`, `reduceMax`, `reduceSum`, `reduceAverage`) for parallel reduction operations on the GPU. Each kernel is executed with `blocks_per_grid` blocks and `threads_per_block` threads per block.
+
+```cpp
+    // Copy the results back to the host
+    int min_result, max_result, sum_result;
+    float avg_result;
+    cudaMemcpy(&min_result, d_output_min, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&max_result, d_output_max, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&sum_result, d_output_sum, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&avg_result, d_output_avg, sizeof(float), cudaMemcpyDeviceToHost);
+```
+- These lines copy the results of the reduction operations (minimum, maximum, sum, average) from the device memory back to the host memory using `cudaMemcpyDeviceToHost`. The results are stored in host variables (`min_result`, `max_result`, `sum_result`, `avg_result`).
+
+```cpp
+    // Print the results
+    printf("Minimum value: %d\n", min_result);
+    printf("Maximum value: %d\n", max_result);
+    printf("Sum: %d\n", sum_result);
+    printf("Average: %.2f\n", avg_result);
+```
+- Here, the results of the reduction operations are printed to the console using `printf`.
+
+```cpp
+    // Free device memory
+    cudaFree(d_input);
+    cudaFree(d_output_min);
+    cudaFree(d_output_max);
+    cudaFree(d_output_sum);
+    cudaFree(d_output_avg);
+```
+- Finally, device memory allocated for the input and output arrays is freed using `cudaFree`.
+
+```cpp
+    return 0;
+}
+```
+- This line indicates the end of the `main()` function, and `0` is returned to indicate successful program execution.
