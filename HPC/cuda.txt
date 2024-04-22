@@ -33,7 +33,8 @@ int main() {
     const int array_size = 256;
     int input[array_size];
 ```
-- Here, we define an input array named `input` with a size of 256 elements. The `const` keyword indicates that the variable `array_size` cannot be modified after initialization.
+- Here, we define an input array named `input` with a size of 256 elements. 
+The `const` keyword indicates that the variable `array_size` cannot be modified after initialization.
 
 ```cpp
     // Initialize input array
@@ -56,20 +57,25 @@ int main() {
     cudaMalloc((void**)&d_output_sum, sizeof(int) * array_size);
     cudaMalloc((void**)&d_output_avg, sizeof(float) * array_size);
 ```
-- Here, we declare pointers for device memory (`d_input`, `d_output_min`, `d_output_max`, `d_output_sum`, `d_output_avg`). Then, we allocate memory on the GPU for these arrays using `cudaMalloc`. The size of each array is determined by `sizeof(int) * array_size` or `sizeof(float) * array_size`, depending on the data type.
+- Here, we declare pointers for device memory (`d_input`, `d_output_min`, `d_output_max`, `d_output_sum`, `d_output_avg`). 
+Then, we allocate memory on the GPU for these arrays using `cudaMalloc`. 
+The size of each array is determined by `sizeof(int) * array_size` or `sizeof(float) * array_size`, depending on the data type.
 
 ```cpp
     // Copy input array to device memory
     cudaMemcpy(d_input, input, sizeof(int) * array_size, cudaMemcpyHostToDevice);
 ```
-- This line copies the `input` array from the host (CPU) to the device (GPU) memory using `cudaMemcpy`. It transfers the data from the `input` array to the allocated device memory pointed to by `d_input`.
+- This line copies the `input` array from the host (CPU) to the device (GPU) memory using `cudaMemcpy`. 
+It transfers the data from the `input` array to the allocated device memory pointed to by `d_input`.
 
 ```cpp
     // Determine the number of threads and blocks
     int threads_per_block = BLOCK_SIZE;
     int blocks_per_grid = (array_size + threads_per_block - 1) / threads_per_block;
 ```
-- These lines determine the number of threads per block and the number of blocks per grid for launching the CUDA kernels. The `BLOCK_SIZE` constant is defined earlier, and `blocks_per_grid` is calculated based on the size of the input array and the number of threads per block.
+- These lines determine the number of threads per block and the number of blocks per grid for launching the CUDA kernels. 
+The `BLOCK_SIZE` constant is defined earlier, and `blocks_per_grid` is calculated based on the 
+size of the input array and the number of threads per block.
 
 ```cpp
     // Launch the kernels for parallel reduction
@@ -78,7 +84,8 @@ int main() {
     reduceSum<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_sum, array_size);
     reduceAverage<<<blocks_per_grid, threads_per_block>>>(d_input, d_output_avg, array_size);
 ```
-- These lines launch CUDA kernels (`reduceMin`, `reduceMax`, `reduceSum`, `reduceAverage`) for parallel reduction operations on the GPU. Each kernel is executed with `blocks_per_grid` blocks and `threads_per_block` threads per block.
+- These lines launch CUDA kernels (`reduceMin`, `reduceMax`, `reduceSum`, `reduceAverage`) for parallel reduction operations on the GPU. 
+Each kernel is executed with `blocks_per_grid` blocks and `threads_per_block` threads per block.
 
 ```cpp
     // Copy the results back to the host
@@ -89,7 +96,8 @@ int main() {
     cudaMemcpy(&sum_result, d_output_sum, sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(&avg_result, d_output_avg, sizeof(float), cudaMemcpyDeviceToHost);
 ```
-- These lines copy the results of the reduction operations (minimum, maximum, sum, average) from the device memory back to the host memory using `cudaMemcpyDeviceToHost`. The results are stored in host variables (`min_result`, `max_result`, `sum_result`, `avg_result`).
+- These lines copy the results of the reduction operations (minimum, maximum, sum, average) from the device memory back to the 
+host memory using `cudaMemcpyDeviceToHost`. The results are stored in host variables (`min_result`, `max_result`, `sum_result`, `avg_result`).
 
 ```cpp
     // Print the results
